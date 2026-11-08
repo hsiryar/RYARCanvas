@@ -442,6 +442,7 @@ footer.site a:hover { color: var(--blue); }
 }
 .analytics-consent-copy strong { display: block; margin-bottom: 7px; font-size: 15px; }
 .analytics-consent-copy p { margin: 0 0 8px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.analytics-consent-status { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 8px; color: var(--muted); font-size: 11px; }
 .analytics-consent-copy a { color: var(--blue); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .analytics-consent-actions { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 .analytics-consent-actions button {
@@ -453,7 +454,32 @@ footer.site a:hover { color: var(--blue); }
 .analytics-consent-actions .analytics-consent-accept { background: var(--blue); border-color: var(--blue); color: #fff; }
 .analytics-consent-actions .analytics-consent-accept:hover { background: var(--blue-dark); }
 
+.adsterra-placements {
+  display: grid; gap: 12px; max-width: 1240px; margin: 32px auto 0; padding: 0 24px;
+}
+.adsterra-native {
+  display: grid; justify-items: center; gap: 8px; min-height: 150px; padding: 12px;
+  border: 1px solid var(--line-soft); border-radius: 14px; background: var(--bg-2);
+}
+.adsterra-label { color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.adsterra-native-container { width: 100%; min-height: 112px; display: flex; justify-content: center; align-items: center; }
+.adsterra-smartlink {
+  display: flex; justify-content: center; align-items: center; gap: 10px;
+  padding: 12px; border: 1px solid var(--line-soft); border-radius: 12px; color: var(--muted);
+  background: var(--bg-2); font-size: 13px;
+}
+.adsterra-smartlink a { color: var(--blue); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.adsterra-smartlink a:hover { color: var(--blue-dark); }
+
 @media (max-width: 560px) {
+  .analytics-consent {
+    left: 10px; right: 10px; bottom: 10px; width: auto; max-height: calc(100dvh - 20px);
+    overflow: auto; grid-template-columns: 1fr; gap: 12px; padding: 16px;
+  }
+  .analytics-consent-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .analytics-consent-actions button { white-space: normal; padding: 6px 8px; font-size: 12px; line-height: 1.25; }
+  .analytics-consent-actions button:first-child { grid-column: 1 / -1; }
+  .adsterra-placements { padding: 0 16px; }
   .canvas-link { display: none; }
   .brand-lockup { height: 40px; gap: 6px; padding-right: 7px; }
   .brand-lockup-image { width: 100px; height: 32px; }

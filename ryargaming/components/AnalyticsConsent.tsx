@@ -2,33 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import {
+  notifyAdvertisingConsent,
+  readAdvertisingConsent,
+  readAnalyticsConsent,
+  saveAdvertisingConsent,
+  saveAnalyticsConsent,
+  type ConsentValue,
+} from "@/lib/consent";
 
 const MEASUREMENT_ID = "G-7D13KEC3K9";
-const CONSENT_KEY = "ryar-analytics-consent";
-let sessionConsent: "granted" | "denied" | null = null;
 
 declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
     __ryarAnalyticsLoaded?: boolean;
-  }
-}
-
-function readConsent(): string | null {
-  try {
-    return window.localStorage.getItem(CONSENT_KEY) || sessionConsent;
-  } catch {
-    return sessionConsent;
-  }
-}
-
-function saveConsent(value: "granted" | "denied") {
-  sessionConsent = value;
-  try {
-    window.localStorage.setItem(CONSENT_KEY, value);
-  } catch {
-    // The choice still applies for the current page if browser storage is unavailable.
+    __ryarAdsterraLoaded?: boolean;
   }
 }
 
@@ -61,7 +51,7 @@ function startAnalytics() {
 }
 
 function trackPageView() {
-  if (readConsent() !== "granted" || !window.gtag) return;
+  if (readAnalyticsConsent() !== "granted" || !window.gtag) return;
   window.gtag("event", "page_view", {
     page_path: `${window.location.pathname}${window.location.search}`,
     page_location: window.location.href,
@@ -81,18 +71,35 @@ function stopAnalytics() {
   }
 }
 
+function choiceLabel(choice: ConsentValue) {
+  if (choice === "granted") return "Allowed";
+  if (choice === "denied") return "Declined";
+  return "Not yet chosen";
+}
+
 export default function AnalyticsConsent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const query = searchParams.toString();
   const [open, setOpen] = useState(false);
+  const [analyticsChoice, setAnalyticsChoice] = useState<ConsentValue>(null);
+  const [advertisingChoice, setAdvertisingChoice] = useState<ConsentValue>(null);
 
   useEffect(() => {
-    const current = readConsent();
-    if (current === "granted") startAnalytics();
-    else if (current !== "denied") setOpen(true);
+    const analytics = readAnalyticsConsent();
+    const advertising = readAdvertisingConsent();
+    setAnalyticsChoice(analytics);
+    setAdvertisingChoice(advertising);
 
-    const showPreferences = () => setOpen(true);
+    if (analytics === "granted") startAnalytics();
+    if (advertising === "granted") notifyAdvertisingConsent("granted");
+    if (analytics === null || advertising === null) setOpen(true);
+
+    const showPreferences = () => {
+      setAnalyticsChoice(readAnalyticsConsent());
+      setAdvertisingChoice(readAdvertisingConsent());
+      setOpen(true);
+    };
     const onPreferenceClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest("[data-open-consent]")) {
@@ -109,23 +116,33 @@ export default function AnalyticsConsent() {
   }, []);
 
   useEffect(() => {
-    if (readConsent() === "granted") {
+    if (readAnalyticsConsent() === "granted") {
       startAnalytics();
       trackPageView();
     }
   }, [pathname, query]);
 
-  const accept = () => {
-    saveConsent("granted");
-    startAnalytics();
-    trackPageView();
-    setOpen(false);
-  };
+  const saveChoices = (analytics: boolean, advertising: boolean) => {
+    const analyticsValue = analytics ? "granted" : "denied";
+    const advertisingValue = advertising ? "granted" : "denied";
+    const shouldReload = Boolean(
+      (window.__ryarAnalyticsLoaded && !analytics) ||
+      (window.__ryarAdsterraLoaded && !advertising),
+    );
 
-  const reject = () => {
-    const shouldReload = Boolean(window.__ryarAnalyticsLoaded);
-    saveConsent("denied");
-    stopAnalytics();
+    saveAnalyticsConsent(analyticsValue);
+    saveAdvertisingConsent(advertisingValue);
+    setAnalyticsChoice(analyticsValue);
+    setAdvertisingChoice(advertisingValue);
+
+    if (analytics) {
+      startAnalytics();
+      trackPageView();
+    } else {
+      stopAnalytics();
+    }
+
+    notifyAdvertisingConsent(advertisingValue);
     setOpen(false);
     if (shouldReload) window.location.reload();
   };
@@ -135,18 +152,55 @@ export default function AnalyticsConsent() {
   if (!open) return null;
 
   return (
-    <aside className="analytics-consent" role="dialog" aria-labelledby="analytics-consent-title" aria-describedby="analytics-consent-copy">
+    <aside
+      className="analytics-consent"
+      role="dialog"
+      aria-labelledby="analytics-consent-title"
+      aria-describedby="analytics-consent-copy"
+    >
       <div className="analytics-consent-copy">
         <strong id="analytics-consent-title">Your privacy choices</strong>
         <p id="analytics-consent-copy">
-          Allow Google Analytics to measure page views and selected site interactions so we can understand how the archive is used. It stays off unless you accept.
+          Google Analytics is optional analytics. Adsterra advertising runs only on RYAR Gaming. These are separate choices, and neither loads until you opt in.
         </p>
+        <div className="analytics-consent-status" aria-live="polite">
+          <span>Analytics: {choiceLabel(analyticsChoice)}</span>
+          <span>Advertising: {choiceLabel(advertisingChoice)}</span>
+        </div>
         <a href="/#/privacy-policy">Privacy details</a>
       </div>
       <div className="analytics-consent-actions">
-        <button className="analytics-consent-accept" type="button" onClick={accept}>Accept analytics</button>
-        <button className="analytics-consent-reject" type="button" onClick={reject}>Reject</button>
-        <button className="analytics-consent-dismiss" type="button" onClick={dismiss}>Not now</button>
+        <button
+          className="analytics-consent-accept"
+          type="button"
+          onClick={() => saveChoices(true, true)}
+        >
+          Allow all optional
+        </button>
+        <button
+          className="analytics-consent-analytics-only"
+          type="button"
+          onClick={() => saveChoices(true, false)}
+        >
+          Allow analytics only
+        </button>
+        <button
+          className="analytics-consent-ads-only"
+          type="button"
+          onClick={() => saveChoices(false, true)}
+        >
+          Allow ads only
+        </button>
+        <button
+          className="analytics-consent-reject"
+          type="button"
+          onClick={() => saveChoices(false, false)}
+        >
+          Reject optional
+        </button>
+        <button className="analytics-consent-dismiss" type="button" onClick={dismiss}>
+          Not now
+        </button>
       </div>
     </aside>
   );
