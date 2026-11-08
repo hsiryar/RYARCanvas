@@ -1,0 +1,11 @@
+# Node / Next.js build artifacts
+**/node_modules/
+**/.next/
+**/out/
+**/.turbo/
+**/coverage/
+**/tsconfig.tsbuildinfo
+
+# Local merged-site preview and imported source archive
+/site/
+/google_drive/
