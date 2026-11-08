@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import Card from "@/components/Card";
 import { bySlug, fmtDate, related, slugify, store, type Block } from "@/lib/data";
@@ -34,6 +35,108 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
+function findBalancedEnd(text: string, start: number, opening: string, closing: string): number {
+  if (text[start] !== opening) return -1;
+  let depth = 0;
+  let escaped = false;
+  for (let i = start; i < text.length; i += 1) {
+    const char = text[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (char === opening) depth += 1;
+    else if (char === closing) {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function renderInline(text: string, allowLinks = true): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+  let key = 0;
+  let plain = "";
+
+  const flushText = () => {
+    if (plain) nodes.push(plain);
+    plain = "";
+  };
+  const pushElement = (element: React.ReactNode) => {
+    flushText();
+    nodes.push(<Fragment key={key++}>{element}</Fragment>);
+  };
+
+  while (cursor < text.length) {
+    if (text.startsWith("**", cursor)) {
+      const end = text.indexOf("**", cursor + 2);
+      if (end > cursor + 2) {
+        pushElement(<strong>{renderInline(text.slice(cursor + 2, end), allowLinks)}</strong>);
+        cursor = end + 2;
+        continue;
+      }
+    }
+    if (text[cursor] === "*") {
+      const end = text.indexOf("*", cursor + 1);
+      if (end > cursor + 1 && !text.startsWith("**", end)) {
+        pushElement(<em>{renderInline(text.slice(cursor + 1, end), allowLinks)}</em>);
+        cursor = end + 1;
+        continue;
+      }
+    }
+    if (text[cursor] === "`") {
+      const end = text.indexOf("`", cursor + 1);
+      if (end > cursor + 1) {
+        pushElement(<code>{text.slice(cursor + 1, end)}</code>);
+        cursor = end + 1;
+        continue;
+      }
+    }
+    if (allowLinks && text[cursor] === "[") {
+      const labelEnd = findBalancedEnd(text, cursor, "[", "]");
+      if (labelEnd >= 0 && text[labelEnd + 1] === "(") {
+        const hrefEnd = findBalancedEnd(text, labelEnd + 1, "(", ")");
+        if (hrefEnd >= 0) {
+          const label = text.slice(cursor + 1, labelEnd);
+          const href = text.slice(labelEnd + 2, hrefEnd).trim().split(/\s+/, 1)[0];
+          if (href.startsWith("/")) {
+            pushElement(<a href={sitePath(href)}>{renderInline(label, false)}</a>);
+          } else if (href.startsWith("#")) {
+            pushElement(<a href={href}>{renderInline(label, false)}</a>);
+          } else if (/^https?:\/\//i.test(href)) {
+            pushElement(
+              <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+                {renderInline(label, false)}
+              </a>,
+            );
+          } else if (/^(mailto|tel):/i.test(href)) {
+            pushElement(<a href={href}>{renderInline(label, false)}</a>);
+          } else {
+            plain += label;
+          }
+          cursor = hrefEnd + 1;
+          continue;
+        }
+      }
+    }
+    plain += text[cursor];
+    cursor += 1;
+  }
+
+  flushText();
+  return nodes;
+}
+
+function InlineMarkdown({ text }: { text: string }) {
+  return <>{renderInline(text)}</>;
+}
+
 function Prose({ blocks }: { blocks: Block[] }) {
   const out: React.ReactNode[] = [];
   let lis: string[] = [];
@@ -43,9 +146,9 @@ function Prose({ blocks }: { blocks: Block[] }) {
       out.push(
         <ul key={key}>
           {lis.map((t, i) => (
-            <li key={i}>{t}</li>
+            <li key={i}><InlineMarkdown text={t} /></li>
           ))}
-        </ul>
+        </ul>,
       );
       lis = [];
     }
@@ -57,11 +160,11 @@ function Prose({ blocks }: { blocks: Block[] }) {
       return;
     }
     flush(`ul-${i}`);
-    if (b.t === "h2") out.push(<h2 key={i}>{b.x}</h2>);
-    else if (b.t === "h3" || b.t === "h4") out.push(<h3 key={i}>{b.x}</h3>);
-    else if (b.t === "blockquote") out.push(<blockquote key={i}>{b.x}</blockquote>);
-    else if (b.t === "caption") out.push(<p className="caption" key={i}>{b.x}</p>);
-    else out.push(<p key={i}>{b.x}</p>);
+    if (b.t === "h2") out.push(<h2 key={i}><InlineMarkdown text={b.x} /></h2>);
+    else if (b.t === "h3" || b.t === "h4") out.push(<h3 key={i}><InlineMarkdown text={b.x} /></h3>);
+    else if (b.t === "blockquote") out.push(<blockquote key={i}><InlineMarkdown text={b.x} /></blockquote>);
+    else if (b.t === "caption") out.push(<p className="caption" key={i}><InlineMarkdown text={b.x} /></p>);
+    else out.push(<p key={i}><InlineMarkdown text={b.x} /></p>);
   });
   flush("ul-end");
   return <div className="prose">{out}</div>;

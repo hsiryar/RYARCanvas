@@ -4,6 +4,7 @@ import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import BrandLogo from "@/components/BrandLogo";
 import AnalyticsConsent from "@/components/AnalyticsConsent";
+import AdsterraAds from "@/components/AdsterraAds";
 import StructuredData from "@/components/StructuredData";
 import { assetUrl, canonicalUrl, LOGO_PATH, SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from "@/lib/seo";
 import "./globals.css";
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <TopBar />
         </Suspense>
         <main>{children}</main>
+        <AdsterraAds />
         <footer className="site">
           <div className="wrap">
             <div className="row" style={{ marginBottom: 10 }}>
@@ -79,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/topics">Topics</Link>
               <Link href="/search">Search</Link>
               <button className="analytics-preferences" type="button" data-open-consent>
-                Analytics preferences
+                Privacy preferences
               </button>
             </div>
             <p style={{ margin: 0, maxWidth: 720 }}>
