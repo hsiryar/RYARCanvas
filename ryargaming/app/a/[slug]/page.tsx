@@ -1,0 +1,193 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import Card from "@/components/Card";
+import { bySlug, fmtDate, related, slugify, store, type Block } from "@/lib/data";
+import { sitePath } from "@/lib/site";
+
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return store().articles.map((article) => ({ slug: article.slug }));
+}
+
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params;
+  const a = bySlug(slug);
+  if (!a) return { title: "Not found — RYAR Gaming" };
+  return { title: `${a.title} — RYAR Gaming`, description: a.dek };
+}
+
+function Prose({ blocks }: { blocks: Block[] }) {
+  const out: React.ReactNode[] = [];
+  let lis: string[] = [];
+
+  const flush = (key: string) => {
+    if (lis.length) {
+      out.push(
+        <ul key={key}>
+          {lis.map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+      );
+      lis = [];
+    }
+  };
+
+  blocks.forEach((b, i) => {
+    if (b.t === "li") {
+      lis.push(b.x);
+      return;
+    }
+    flush(`ul-${i}`);
+    if (b.t === "h2") out.push(<h2 key={i}>{b.x}</h2>);
+    else if (b.t === "h3" || b.t === "h4") out.push(<h3 key={i}>{b.x}</h3>);
+    else if (b.t === "blockquote") out.push(<blockquote key={i}>{b.x}</blockquote>);
+    else if (b.t === "caption") out.push(<p className="caption" key={i}>{b.x}</p>);
+    else out.push(<p key={i}>{b.x}</p>);
+  });
+  flush("ul-end");
+  return <div className="prose">{out}</div>;
+}
+
+export default async function ArticlePage({ params }: Props) {
+  const { slug } = await params;
+  const a = bySlug(slug);
+  if (!a) notFound();
+
+  const more = related(a, 3);
+  const initials = (a.authors[0]?.name ?? "Ryar Staff")
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("");
+  const kindLabel =
+    a.kind === "review" ? "Reviews" : a.kind === "gallery" ? "Galleries" : a.subtype === "guide" ? "Guides" : "News";
+  const kindHref = a.kind === "review" ? "/c/review" : a.kind === "gallery" ? "/c/gallery" : a.subtype === "guide" ? "/c/guide" : "/c/news";
+
+  return (
+    <div className="wrap">
+      <nav className="crumbs">
+        <Link href="/">Home</Link>
+        <span>/</span>
+        <Link href={kindHref}>{kindLabel}</Link>
+        {a.section ? (
+          <>
+            <span>/</span>
+            <span>{a.section}</span>
+          </>
+        ) : null}
+      </nav>
+
+      <article className="article">
+        <div className="kicker">
+          <span
+            className={`badge ${
+              a.subtype === "deals" ? "deals" : a.subtype === "guide" ? "guide" : a.kind
+            }`}
+          >
+            {a.subtype === "deals" ? "deal" : a.subtype === "guide" ? "guide" : a.kind}
+          </span>
+          {a.trending && <span className="badge hot">Trending</span>}
+          {a.has_video && <span className="badge news">Video inside</span>}
+        </div>
+
+        <h1>{a.title}</h1>
+        {a.dek && <p className="lede">{a.dek}</p>}
+
+        <div className="byline">
+          <div className="avatar">{initials.toUpperCase()}</div>
+          <div>
+            <div className="who">{a.authors.map((x) => x.name).join(", ") || "Ryar Staff"}</div>
+            <div className="when">
+              {fmtDate(a.published_at)} · {a.reading_minutes} min read ·{" "}
+              {a.word_count.toLocaleString()} words
+            </div>
+          </div>
+        </div>
+
+        {a.source_url && (
+          <p className="source-line">
+            Original source: <a href={a.source_url} target="_blank" rel="noopener noreferrer">GameSpot</a>
+          </p>
+        )}
+
+        {a.image && (
+          <figure className="hero-img">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={sitePath(a.image)} alt="" />
+          </figure>
+        )}
+
+        {a.review?.rating != null && (
+          <div className="verdict">
+            <div>
+              <div className="num">
+                {a.review.rating}
+                <small>/10</small>
+              </div>
+              <div className="which">{a.review.verdict ?? "Verdict"}</div>
+              {a.review.game && (
+                <div style={{ fontSize: 13, color: "#5f6368", marginTop: 6 }}>{a.review.game}</div>
+              )}
+            </div>
+            <div className="pc">
+              {a.review.pros.length > 0 && (
+                <div>
+                  <h4>The good</h4>
+                  <ul>
+                    {a.review.pros.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {a.review.cons.length > 0 && (
+                <div>
+                  <h4>The bad</h4>
+                  <ul>
+                    {a.review.cons.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <Prose blocks={a.blocks.length ? a.blocks : [{ t: "p", x: a.body_text }]} />
+
+        {a.tags.length > 0 && (
+          <div className="tagrow">
+            {a.tags.slice(0, 14).map((t) => (
+              <Link key={t} className="tag" href={`/t/${slugify(t)}`}>
+                {t}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {more.length > 0 && (
+          <section className="section">
+            <div className="section-head">
+              <h2>More on {a.tags[0] ?? a.section ?? "this"}</h2>
+              {a.tags[0] && (
+                <Link className="more" href={`/t/${slugify(a.tags[0])}`}>
+                  All {a.tags[0]}
+                </Link>
+              )}
+            </div>
+            <div className="grid tight">
+              {more.map((m) => (
+                <Card key={m.slug} a={m} tight />
+              ))}
+            </div>
+          </section>
+        )}
+      </article>
+    </div>
+  );
+}
