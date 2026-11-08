@@ -9,7 +9,7 @@ import StructuredData from "@/components/StructuredData";
 import { assetUrl, canonicalUrl, LOGO_PATH, SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from "@/lib/seo";
 import "./globals.css";
 
-const DEFAULT_TITLE = "RYAR Gaming — gaming news, guides & reviews";
+const DEFAULT_TITLE = "Gaming News & Game Updates | RYAR Gaming";
 const DEFAULT_URL = canonicalUrl("/");
 const LOGO_URL = assetUrl(LOGO_PATH);
 

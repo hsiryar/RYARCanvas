@@ -1,4 +1,4 @@
-import { assetUrl, canonicalUrl, LOGO_PATH, SITE_NAME, SITE_ORIGIN } from "@/lib/seo";
+import { assetUrl, canonicalUrl, LOGO_PATH, SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from "@/lib/seo";
 
 const organizationId = `${SITE_ORIGIN}/#organization`;
 const websiteUrl = canonicalUrl("/");
@@ -18,6 +18,7 @@ const structuredData = [
     "@type": "WebSite",
     "@id": `${websiteUrl}#website`,
     name: SITE_NAME,
+    description: SITE_DESCRIPTION,
     url: websiteUrl,
     inLanguage: "en",
     publisher: { "@id": organizationId },

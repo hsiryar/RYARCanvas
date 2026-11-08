@@ -6,9 +6,24 @@ import { KINDS, feed, feedSlice, gta6Feed, gta6Stats, slugify, stats, topGames, 
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: "Gaming, explained — RYAR Gaming",
-  description: "Explore gaming news, guides, reviews, deals and GTA VI coverage in the RYAR Gaming archive.",
+  title: "Gaming News & Game Updates | RYAR Gaming",
+  description:
+    "Latest gaming news, video game updates, reviews, guides and release dates across PlayStation, Xbox, Nintendo and PC, plus GTA VI coverage from RYAR Gaming.",
   path: "/",
+  keywords: [
+    "gaming news",
+    "video game news",
+    "game updates",
+    "video game updates",
+    "game reviews",
+    "gaming guides",
+    "game release dates",
+    "PlayStation news",
+    "Xbox news",
+    "Nintendo Switch news",
+    "PC gaming news",
+    "GTA 6 news",
+  ],
 });
 
 export default function HomePage() {
@@ -26,7 +41,10 @@ export default function HomePage() {
   return (
     <div className="wrap">
       <section className="hero">
-        <h1>Gaming, explained</h1>
+        <h1>Gaming news, explained</h1>
+        <p className="hero-description">
+          Latest video game news, game updates, reviews and guides for PlayStation, Xbox, Nintendo and PC.
+        </p>
         <form className="searchbig" action="/search">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="11" cy="11" r="6.5" stroke="#9aa0a6" strokeWidth="1.8" />
