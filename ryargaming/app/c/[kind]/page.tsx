@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import InfiniteFeed from "@/components/InfiniteFeed";
 import { KINDS, feedSlice } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
 type Props = { params: Promise<{ kind: string }> };
 
@@ -26,14 +27,27 @@ const COPY: Record<string, { h1: string; sub: string }> = {
 export async function generateMetadata({ params }: Props) {
   const { kind } = await params;
   const c = COPY[kind];
-  return { title: c ? `${c.h1} — RYAR Gaming` : "RYAR Gaming" };
+  if (!c) {
+    return pageMetadata({
+      title: "Category not found — RYAR Gaming",
+      description: "This category is not available in the RYAR Gaming archive.",
+      path: `/c/${kind}`,
+      robots: { index: false, follow: false },
+    });
+  }
+  return pageMetadata({
+    title: `${c.h1} — RYAR Gaming`,
+    description: c.sub,
+    path: `/c/${kind}`,
+    robots: kind === "all" ? { index: false, follow: true } : undefined,
+  });
 }
 
 export default async function CategoryPage({ params }: Props) {
   const { kind } = await params;
   if (!VALID.includes(kind)) notFound();
 
-  const { items, total } = feedSlice({ kind: kind as (typeof KINDS)[number]["id"] }, 0, 24);
+  const { items, total, cursor } = feedSlice({ kind: kind as (typeof KINDS)[number]["id"] }, 0, 24);
   const copy = COPY[kind] ?? COPY.all;
 
   return (
@@ -56,7 +70,7 @@ export default async function CategoryPage({ params }: Props) {
         {items.length === 0 ? (
           <p style={{ color: "var(--muted)" }}>Nothing here yet.</p>
         ) : (
-          <InfiniteFeed initial={items} total={total} kind={kind} perPage={24} />
+          <InfiniteFeed key={kind} initial={items} total={total} cursor={cursor} kind={kind} perPage={24} />
         )}
       </section>
     </div>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Card from "@/components/Card";
 import InfiniteFeed from "@/components/InfiniteFeed";
 import { allGames, feedSlice, gameBySlug, slugify } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamicParams = false;
 
@@ -15,11 +16,20 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const g = gameBySlug(slug);
-  if (!g) return { title: "Game — RYAR Gaming" };
-  return {
+  if (!g) {
+    return pageMetadata({
+      title: "Game not found — RYAR Gaming",
+      description: "This game is not available in the RYAR Gaming archive.",
+      path: `/g/${slug}`,
+      robots: { index: false, follow: false },
+    });
+  }
+  return pageMetadata({
     title: `${g.name} — news, guides & reviews — RYAR Gaming`,
     description: `${g.count} stories about ${g.name}${g.avg != null ? `, average review score ${g.avg}/10` : ""}.`,
-  };
+    path: `/g/${slug}`,
+    robots: g.count < 2 ? { index: false, follow: true } : undefined,
+  });
 }
 
 export default async function GamePage({ params }: Props) {
@@ -27,7 +37,7 @@ export default async function GamePage({ params }: Props) {
   const g = gameBySlug(slug);
   if (!g) notFound();
 
-  const { items, total } = feedSlice({ game: g.slug }, 0, 12);
+  const { items, total, cursor } = feedSlice({ game: g.slug }, 0, 12);
   const rated = g.reviews.filter((r) => r.review?.rating != null);
   const best = [...rated].sort((a, b) => (b.review!.rating ?? 0) - (a.review!.rating ?? 0))[0];
   const tags = [...new Set(g.articles.flatMap((a) => a.tags))].slice(0, 12);
@@ -95,7 +105,7 @@ export default async function GamePage({ params }: Props) {
           <h2>All coverage</h2>
           <span style={{ fontSize: 13, color: "var(--muted)" }}>{total} stories</span>
         </div>
-        <InfiniteFeed initial={items} total={total} game={g.slug} perPage={12} />
+        <InfiniteFeed key={g.slug} initial={items} total={total} cursor={cursor} game={g.slug} perPage={12} />
       </section>
     </div>
   );

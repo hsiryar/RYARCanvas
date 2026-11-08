@@ -3,6 +3,13 @@ import Card from "@/components/Card";
 import { relTime } from "@/lib/format";
 import InfiniteFeed from "@/components/InfiniteFeed";
 import { KINDS, feed, feedSlice, gta6Feed, gta6Stats, slugify, stats, topGames, topTags, trending } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({
+  title: "Gaming, explained — RYAR Gaming",
+  description: "Explore gaming news, guides, reviews, deals and GTA VI coverage in the RYAR Gaming archive.",
+  path: "/",
+});
 
 export default function HomePage() {
   const s = stats();
@@ -99,7 +106,7 @@ export default function HomePage() {
             More news
           </Link>
         </div>
-        <InfiniteFeed initial={latest.items} total={latest.total} kind="all" perPage={12} />
+        <InfiniteFeed key="all" initial={latest.items} total={latest.total} cursor={latest.cursor} kind="all" perPage={12} />
       </section>
 
       {reviews.length > 0 && (

@@ -38,24 +38,28 @@ export type Article = {
   body_text: string;
 };
 
-export type FeedArticle = Pick<
-  Article,
-  | "slug"
-  | "path"
-  | "kind"
-  | "subtype"
-  | "trending"
-  | "title"
-  | "dek"
-  | "tags"
-  | "authors"
-  | "published_at"
-  | "reading_minutes"
-  | "review"
-  | "image"
-  | "image_count"
-  | "games"
-> & { excerpt: string };
+export type FeedCard = Omit<
+  Pick<
+    Article,
+    | "slug"
+    | "path"
+    | "kind"
+    | "subtype"
+    | "trending"
+    | "title"
+    | "dek"
+    | "tags"
+    | "published_at"
+    | "reading_minutes"
+    | "review"
+    | "image"
+    | "image_count"
+    | "games"
+  >,
+  "review"
+> & { review: Pick<Review, "rating" | "game"> | null };
+
+export type FeedArticle = FeedCard & { excerpt: string };
 
 export const KINDS = [
   { id: "all", label: "All" },

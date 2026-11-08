@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Card from "@/components/Card";
 import { bySlug, fmtDate, related, slugify, store, type Block } from "@/lib/data";
 import { sitePath } from "@/lib/site";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamicParams = false;
 
@@ -15,8 +16,22 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const a = bySlug(slug);
-  if (!a) return { title: "Not found — RYAR Gaming" };
-  return { title: `${a.title} — RYAR Gaming`, description: a.dek };
+  if (!a) {
+    return pageMetadata({
+      title: "Story not found — RYAR Gaming",
+      description: "This story is not available in the RYAR Gaming archive.",
+      path: `/a/${slug}`,
+      robots: { index: false, follow: false },
+    });
+  }
+  return pageMetadata({
+    title: `${a.title} — RYAR Gaming`,
+    description: a.dek || a.excerpt,
+    path: `/a/${slug}`,
+    image: a.image ?? undefined,
+    type: "article",
+    publishedTime: a.published_at,
+  });
 }
 
 function Prose({ blocks }: { blocks: Block[] }) {
@@ -58,11 +73,6 @@ export default async function ArticlePage({ params }: Props) {
   if (!a) notFound();
 
   const more = related(a, 3);
-  const initials = (a.authors[0]?.name ?? "Ryar Staff")
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("");
   const kindLabel =
     a.kind === "review" ? "Reviews" : a.kind === "gallery" ? "Galleries" : a.subtype === "guide" ? "Guides" : "News";
   const kindHref = a.kind === "review" ? "/c/review" : a.kind === "gallery" ? "/c/gallery" : a.subtype === "guide" ? "/c/guide" : "/c/news";
@@ -98,26 +108,22 @@ export default async function ArticlePage({ params }: Props) {
         {a.dek && <p className="lede">{a.dek}</p>}
 
         <div className="byline">
-          <div className="avatar">{initials.toUpperCase()}</div>
-          <div>
-            <div className="who">{a.authors.map((x) => x.name).join(", ") || "Ryar Staff"}</div>
-            <div className="when">
-              {fmtDate(a.published_at)} · {a.reading_minutes} min read ·{" "}
-              {a.word_count.toLocaleString()} words
-            </div>
+          <div className="who">RYAR Gaming archive</div>
+          <div className="when">
+            {fmtDate(a.published_at)} · {a.reading_minutes} min read · {a.word_count.toLocaleString()} words
           </div>
         </div>
-
-        {a.source_url && (
-          <p className="source-line">
-            Original source: <a href={a.source_url} target="_blank" rel="noopener noreferrer">GameSpot</a>
-          </p>
-        )}
 
         {a.image && (
           <figure className="hero-img">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={sitePath(a.image)} alt="" />
+            <img
+              src={sitePath(a.image)}
+              alt={a.title}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
           </figure>
         )}
 

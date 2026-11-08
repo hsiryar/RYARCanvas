@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Card from "./Card";
-import type { Article, FeedArticle, KindId } from "@/lib/types";
+import type { Article, FeedCard, KindId } from "@/lib/types";
 import { matchesKind, slugify } from "@/lib/types";
-import { loadStaticFeed } from "@/lib/static-feed";
+import { loadFeedManifest, loadStaticFeedChunk } from "@/lib/static-feed";
 
 type Props = {
   initial: Article[];
   total: number;
+  cursor?: number;
   kind?: string;
   tag?: string;
   game?: string;
@@ -17,7 +18,7 @@ type Props = {
 };
 type FeedScope = Pick<Props, "kind" | "tag" | "game" | "collection">;
 
-function isGta6(article: FeedArticle): boolean {
+function isGta6(article: FeedCard): boolean {
   const gta6 = /(gta-?6|gta-?vi|grand[- ]theft[- ]auto[- ]?(6|vi))/i;
   return (
     gta6.test(article.slug) ||
@@ -28,13 +29,13 @@ function isGta6(article: FeedArticle): boolean {
   );
 }
 
-function matchesScope(article: FeedArticle, scope: FeedScope): boolean {
+function matchesScope(article: FeedCard, scope: FeedScope): boolean {
   if (scope.collection === "gta6" && !isGta6(article)) return false;
   if (scope.tag && !article.tags.some((tag) => slugify(tag) === scope.tag)) return false;
   if (
     scope.game &&
     ![...article.games, ...(article.review?.game ? [article.review.game] : [])].some(
-      (game) => slugify(game) === scope.game
+      (game) => slugify(game) === scope.game,
     )
   ) {
     return false;
@@ -45,57 +46,78 @@ function matchesScope(article: FeedArticle, scope: FeedScope): boolean {
 export default function InfiniteFeed({
   initial,
   total,
+  cursor = 0,
   kind,
   tag,
   game,
   collection,
   perPage = 12,
 }: Props) {
-  const [items, setItems] = useState<FeedArticle[]>(initial);
+  const [items, setItems] = useState<FeedCard[]>(initial);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(initial.length >= total);
   const [error, setError] = useState<string | null>(null);
   const sentinel = useRef<HTMLDivElement | null>(null);
   const busy = useRef(false);
+  const cursorRef = useRef(cursor);
   const scope: FeedScope = { kind, tag, game, collection };
 
-  const load = useCallback(async () => {
-    if (busy.current || done) return;
+  const load = useCallback(async (retry = false) => {
+    if (busy.current || done || (error && !retry)) return;
     busy.current = true;
     setLoading(true);
     setError(null);
 
     try {
-      const archive = await loadStaticFeed();
-      const scoped = archive.articles.filter((article) => matchesScope(article, scope));
-      const nextItems = scoped.slice(items.length, items.length + perPage);
-      const nextLength = items.length + nextItems.length;
+      const manifest = await loadFeedManifest();
+      let nextCursor = cursorRef.current;
+      const nextItems: FeedCard[] = [];
 
+      while (nextCursor < manifest.total && nextItems.length < perPage) {
+        const chunkIndex = Math.floor(nextCursor / manifest.chunkSize);
+        const chunk = await loadStaticFeedChunk(chunkIndex);
+        const offset = nextCursor - chunk.start;
+        if (offset < 0 || offset >= chunk.articles.length) {
+          throw new Error(`Feed chunk ${chunkIndex} has an invalid range.`);
+        }
+
+        let advanced = false;
+        for (let index = offset; index < chunk.articles.length; index++) {
+          const article = chunk.articles[index];
+          nextCursor = chunk.start + index + 1;
+          advanced = true;
+          if (matchesScope(article, scope)) nextItems.push(article);
+          if (nextItems.length >= perPage) break;
+        }
+        if (!advanced) break;
+      }
+
+      cursorRef.current = nextCursor;
       setItems((previous) => {
         const seen = new Set(previous.map((item) => item.slug));
         return [...previous, ...nextItems.filter((item) => !seen.has(item.slug))];
       });
-      setDone(nextLength >= scoped.length);
+      setDone(nextCursor >= manifest.total || items.length + nextItems.length >= total || nextItems.length === 0);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not load more stories");
+      setError(caught instanceof Error ? caught.message : "Could not load more stories.");
     } finally {
       setLoading(false);
       busy.current = false;
     }
-  }, [done, items.length, perPage, kind, tag, game, collection]);
+  }, [done, error, items.length, perPage, total, kind, tag, game, collection]);
 
   useEffect(() => {
     const element = sentinel.current;
-    if (!element || done) return;
+    if (!element || done || error) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) void load();
       },
-      { rootMargin: "700px 0px" }
+      { rootMargin: "700px 0px" },
     );
     observer.observe(element);
     return () => observer.disconnect();
-  }, [load, done]);
+  }, [load, done, error]);
 
   return (
     <>
@@ -105,23 +127,26 @@ export default function InfiniteFeed({
         ))}
       </div>
 
-      <div ref={sentinel} className="feed-foot" aria-live="polite">
+      <div ref={sentinel} className="feed-foot" aria-live="polite" aria-busy={loading}>
         {loading && (
           <span className="spinner-row">
             <span className="spinner" aria-hidden="true" /> Loading more stories…
           </span>
         )}
         {error && (
-          <button className="chip" onClick={() => void load()}>
-            Retry ({error})
-          </button>
+          <div className="feed-error" role="alert">
+            <span>Could not load more stories: {error}</span>
+            <button className="chip" onClick={() => void load(true)}>
+              Retry
+            </button>
+          </div>
         )}
         {!loading && !error && done && items.length > 0 && (
           <span>You&apos;re all caught up — {items.length} stories shown.</span>
         )}
         {!loading && !error && !done && (
           <button className="chip" onClick={() => void load()}>
-            Load more
+            Load more stories
           </button>
         )}
       </div>

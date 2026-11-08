@@ -1,5 +1,4 @@
-import Link from "next/link";
-import type { FeedArticle } from "@/lib/types";
+import type { FeedCard } from "@/lib/types";
 import { relTime } from "@/lib/format";
 import { sitePath } from "@/lib/site";
 
@@ -9,7 +8,7 @@ const KIND_LABEL: Record<string, string> = {
   gallery: "gallery",
 };
 
-function Badges({ a }: { a: FeedArticle }) {
+function Badges({ a }: { a: FeedCard }) {
   const cls = a.subtype === "deals" ? "deals" : a.subtype === "guide" ? "guide" : KIND_LABEL[a.kind];
   const label = a.subtype === "deals" ? "deal" : a.subtype === "guide" ? "guide" : KIND_LABEL[a.kind];
   return (
@@ -20,13 +19,16 @@ function Badges({ a }: { a: FeedArticle }) {
   );
 }
 
-export default function Card({ a, tight = false }: { a: FeedArticle; tight?: boolean }) {
+export default function Card({ a, tight = false }: { a: FeedCard; tight?: boolean }) {
+  const path = a.path.endsWith("/") ? a.path : `${a.path}/`;
+  const href = sitePath(path);
+
   return (
-    <Link href={a.path} className="card" style={tight ? { borderRadius: 12 } : undefined}>
+    <a href={href} className="card" style={tight ? { borderRadius: 12 } : undefined}>
       <div className="thumb">
         {a.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={sitePath(a.image)} alt="" loading="lazy" />
+          <img src={sitePath(a.image)} alt={a.title} loading="lazy" decoding="async" />
         ) : null}
         {a.review?.rating != null && (
           <span className="score">
@@ -50,13 +52,11 @@ export default function Card({ a, tight = false }: { a: FeedArticle; tight?: boo
         <h3>{a.title}</h3>
         {a.dek && <p className="dek">{a.dek}</p>}
         <div className="meta">
-          <span>{a.authors[0]?.name ?? "Ryar Staff"}</span>
-          <span className="sep">·</span>
           <span>{relTime(a.published_at)}</span>
           <span className="sep">·</span>
           <span>{a.reading_minutes} min read</span>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }
