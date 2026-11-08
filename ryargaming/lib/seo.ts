@@ -4,7 +4,7 @@ import { sitePath } from "./site";
 export const SITE_ORIGIN = "https://ryarcanvas.online";
 export const SITE_NAME = "RYAR Gaming";
 export const SITE_DESCRIPTION =
-  "Gaming news, guides, reviews and archive coverage from RYAR Gaming.";
+  "Gaming news, video game updates, reviews and guides across PlayStation, Xbox, Nintendo and PC from RYAR Gaming.";
 export const LOGO_PATH = "/images/ryarcanvas-logo.webp";
 
 function trailingSlash(path: string): string {
@@ -29,6 +29,7 @@ type PageMetadataOptions = {
   description: string;
   path: string;
   image?: string;
+  keywords?: string[];
   type?: "website" | "article";
   publishedTime?: string;
   robots?: Metadata["robots"];
@@ -39,6 +40,7 @@ export function pageMetadata({
   description,
   path,
   image = LOGO_PATH,
+  keywords,
   type = "website",
   publishedTime,
   robots,
@@ -51,6 +53,7 @@ export function pageMetadata({
     title,
     description: summary,
     alternates: { canonical },
+    ...(keywords?.length ? { keywords } : {}),
     ...(robots ? { robots } : {}),
     openGraph: {
       type,

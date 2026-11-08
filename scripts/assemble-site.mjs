@@ -17,5 +17,8 @@ for (const file of ["index.html", "sitemap.xml", "robots.txt", "CNAME", ".nojeky
   await fs.copyFile(path.join(root, file), path.join(site, file));
 }
 
+// The Canvas landing page and Gaming archive share self-hosted Inter and image assets.
+await fs.cp(path.join(root, "fonts"), path.join(site, "fonts"), { recursive: true });
+await fs.cp(path.join(root, "assets"), path.join(site, "assets"), { recursive: true });
 await fs.cp(gamingExport, path.join(site, "gaming"), { recursive: true });
 console.log(`Assembled the combined static site at ${path.relative(root, site)}/`);
