@@ -28,6 +28,6 @@ python3 -m http.server 4173 --bind 0.0.0.0 --directory site
 
 Then open `http://localhost:4173/`. To deploy with GitHub Pages, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
 
-## Content attribution
+## Archive content
 
-RYAR Gaming includes the imported GameSpot/Fandom archive. The user has confirmed publication permission for this integration; original publishers and authors retain attribution and rights, and article pages link back to their source. Keep any applicable license or permission records with the site.
+The site owner confirms that the archive is RYAR Gaming property and approves its publication under RYAR Canvas. Original author and source URL fields remain in `ryargaming/data/content.json` for internal provenance; the public story UI uses RYAR Gaming branding and does not display those fields.

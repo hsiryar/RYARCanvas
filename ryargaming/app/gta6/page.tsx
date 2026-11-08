@@ -2,12 +2,13 @@ import Link from "next/link";
 import Card from "@/components/Card";
 import InfiniteFeed from "@/components/InfiniteFeed";
 import { feedSlice, fmtDate, gta6Stats } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "GTA VI — every story, guide and screenshot — RYAR Gaming",
-  description:
-    "All of RYAR Gaming's Grand Theft Auto VI coverage: news, guides, leaks confirmed and denied, and every screenshot drop.",
-};
+export const metadata = pageMetadata({
+  title: "GTA VI — news, guides and screenshots — RYAR Gaming",
+  description: "All of RYAR Gaming's Grand Theft Auto VI coverage: news, guides, analysis, reviews and screenshots.",
+  path: "/gta6",
+});
 
 export default function Gta6Page() {
   const s = gta6Stats();
@@ -101,7 +102,7 @@ export default function Gta6Page() {
           <h2>Every GTA VI story</h2>
           <span style={{ fontSize: 13, color: "var(--muted)" }}>{feed.total} in total</span>
         </div>
-        <InfiniteFeed initial={feed.items} total={feed.total} collection="gta6" perPage={12} />
+        <InfiniteFeed key="gta6" initial={feed.items} total={feed.total} cursor={feed.cursor} collection="gta6" perPage={12} />
       </section>
     </div>
   );

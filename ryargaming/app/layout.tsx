@@ -2,19 +2,55 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
+import BrandLogo from "@/components/BrandLogo";
 import AnalyticsConsent from "@/components/AnalyticsConsent";
-import { generatedAt } from "@/lib/data";
+import StructuredData from "@/components/StructuredData";
+import { assetUrl, canonicalUrl, LOGO_PATH, SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from "@/lib/seo";
 import "./globals.css";
 
+const DEFAULT_TITLE = "RYAR Gaming — gaming news, guides & reviews";
+const DEFAULT_URL = canonicalUrl("/");
+const LOGO_URL = assetUrl(LOGO_PATH);
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ryarcanvas.online"),
-  title: "RYAR Gaming — gaming news, guides & reviews",
-  description:
-    "RYAR Gaming: a searchable archive of video-game news, guides, reviews, deals and galleries.",
+  metadataBase: new URL(SITE_ORIGIN),
+  applicationName: SITE_NAME,
+  title: DEFAULT_TITLE,
+  description: SITE_DESCRIPTION,
+  icons: {
+    icon: [{ url: LOGO_URL, type: "image/webp" }],
+    shortcut: [{ url: LOGO_URL, type: "image/webp" }],
+    apple: [{ url: LOGO_URL, type: "image/webp" }],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    title: DEFAULT_TITLE,
+    description: SITE_DESCRIPTION,
+    url: DEFAULT_URL,
+    siteName: SITE_NAME,
+    locale: "en_US",
+    images: [{ url: LOGO_URL, alt: "RYAR Canvas logo" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: DEFAULT_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [LOGO_URL],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const refreshed = generatedAt();
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
@@ -24,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){try{var t=localStorage.getItem("theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=d?"dark":"light";}catch(e){}})();`,
           }}
         />
+        <StructuredData />
         <Suspense fallback={<header className="topbar" style={{ height: 68 }} />}>
           <TopBar />
         </Suspense>
@@ -31,10 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="site">
           <div className="wrap">
             <div className="row" style={{ marginBottom: 10 }}>
-              <Link href="/" className="logo" style={{ fontSize: 17 }}>
-                <span className="l1">ryar</span>
-                <span className="l2">gaming</span>
-              </Link>
+              <BrandLogo />
               <Link href="/c/news">News</Link>
               <Link href="/c/guide">Guides</Link>
               <Link href="/c/review">Reviews</Link>
@@ -48,12 +82,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 Analytics preferences
               </button>
             </div>
-            <p style={{ margin: "0 0 6px" }}>
-              Archive snapshot · source data collected {refreshed.slice(0, 16).replace("T", " ")} UTC
-            </p>
             <p style={{ margin: 0, maxWidth: 720 }}>
-              RYAR Gaming is a reader archive. Article text and imagery remain the property of their
-              original publishers and authors; visit each original source for the canonical story.
+              RYAR Gaming is the official gaming archive of RYAR Canvas. Archive ownership and
+              publication permissions are managed by RYAR Gaming.
             </p>
             <p style={{ margin: "8px 0 0" }}><a href="/">Visit RYAR Canvas</a></p>
           </div>

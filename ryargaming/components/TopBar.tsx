@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
+import BrandLogo from "./BrandLogo";
 import { BASE_PATH, sitePath } from "@/lib/site";
 
 const NAV = [
@@ -28,13 +29,7 @@ export default function TopBar() {
   return (
     <header className="topbar">
       <div className="wrap topbar-inner">
-        <Link href="/" className="logo" aria-label="RYAR Gaming home">
-          <span className="l1">ryar</span>
-          <span className="l2">gaming</span>
-          <span className="logo-dots" aria-hidden="true">
-            <i /> <i /> <i /> <i />
-          </span>
-        </Link>
+        <BrandLogo />
 
         <nav className="nav" aria-label="Gaming archive navigation">
           {NAV.map((item) => (

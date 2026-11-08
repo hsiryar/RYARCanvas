@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { allTags } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = { title: "All topics — RYAR Gaming" };
+export const metadata = pageMetadata({
+  title: "Gaming topics — RYAR Gaming",
+  description: "Browse recurring games, franchises and subjects covered by RYAR Gaming.",
+  path: "/topics",
+});
 
 export default function TopicsPage() {
-  const tags = allTags();
+  const tags = allTags().filter((tag) => tag.count >= 2);
   const groups = [
     { label: "Most covered", items: tags.slice(0, 24) },
     { label: "Everything else", items: tags.slice(24) },
@@ -20,8 +25,8 @@ export default function TopicsPage() {
 
       <header className="page-head">
         <div className="eyebrow">Index</div>
-        <h1>All topics</h1>
-        <p>{tags.length.toLocaleString()} topics across the archive — platforms, games, studios, events.</p>
+        <h1>Gaming topics</h1>
+        <p>{tags.length.toLocaleString()} topics with multiple stories across the archive — platforms, games, studios and events.</p>
       </header>
 
       {groups.map((g) => (

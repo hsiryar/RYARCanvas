@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import InfiniteFeed from "@/components/InfiniteFeed";
 import { allTags, feedSlice, relatedTags, tagBySlug } from "@/lib/data";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamicParams = false;
 
@@ -14,10 +15,20 @@ type Props = { params: Promise<{ tag: string }> };
 export async function generateMetadata({ params }: Props) {
   const { tag } = await params;
   const entry = tagBySlug(tag);
-  return {
-    title: entry ? `${entry.tag} — RYAR Gaming` : "Topic — RYAR Gaming",
-    description: entry ? `${entry.count} stories tagged ${entry.tag}.` : undefined,
-  };
+  if (!entry) {
+    return pageMetadata({
+      title: "Topic not found — RYAR Gaming",
+      description: "This topic is not available in the RYAR Gaming archive.",
+      path: `/t/${tag}`,
+      robots: { index: false, follow: false },
+    });
+  }
+  return pageMetadata({
+    title: `${entry.tag} — RYAR Gaming`,
+    description: `${entry.count} stories tagged ${entry.tag}.`,
+    path: `/t/${tag}`,
+    robots: entry.count < 2 ? { index: false, follow: true } : undefined,
+  });
 }
 
 export default async function TagPage({ params }: Props) {
@@ -25,7 +36,7 @@ export default async function TagPage({ params }: Props) {
   const entry = tagBySlug(tag);
   if (!entry) notFound();
 
-  const { items, total } = feedSlice({ tag: entry.slug }, 0, 12);
+  const { items, total, cursor } = feedSlice({ tag: entry.slug }, 0, 12);
   const related = relatedTags(entry.tag, 12);
 
   return (
@@ -57,7 +68,7 @@ export default async function TagPage({ params }: Props) {
       </header>
 
       <section className="section" style={{ marginTop: 22 }}>
-        <InfiniteFeed initial={items} total={total} tag={entry.slug} perPage={12} />
+        <InfiniteFeed key={entry.slug} initial={items} total={total} cursor={cursor} tag={entry.slug} perPage={12} />
       </section>
     </div>
   );

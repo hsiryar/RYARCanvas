@@ -23,6 +23,12 @@ type Store = {
 };
 
 let cache: Store | null = null;
+let articlePositions: Map<string, number> | null = null;
+
+function positions(): Map<string, number> {
+  if (!articlePositions) articlePositions = new Map(store().articles.map((article, index) => [article.slug, index]));
+  return articlePositions;
+}
 
 export function store(): Store {
   if (cache) return cache;
@@ -95,14 +101,16 @@ function pool({ kind, tag, game, collection }: FeedKey): Article[] {
   const arts = store().articles;
   if (collection === "gta6") return arts.filter(isGta6);
   if (tag) {
-    const tagName = tagBySlug(tag)?.tag;
-    if (!tagName) return [];
-    return arts.filter((a) => a.tags.includes(tagName));
+    if (!tagBySlug(tag)) return [];
+    return arts.filter((article) => article.tags.some((value) => slugify(value) === tag));
   }
   if (game) {
-    const g = gameBySlug(game);
-    if (!g) return [];
-    return g.articles;
+    if (!gameBySlug(game)) return [];
+    return arts.filter((article) =>
+      [...article.games, ...(article.review?.game ? [article.review.game] : [])].some(
+        (value) => slugify(value) === game,
+      ),
+    );
   }
   return arts.filter((a) => matchesKind(a, (kind ?? "all") as KindId));
 }
@@ -112,7 +120,8 @@ export function feedSlice(key: FeedKey, offset = 0, limit = 12) {
   const all = pool(key);
   const items = all.slice(offset, offset + limit);
   const nextOffset = offset + items.length < all.length ? offset + items.length : null;
-  return { items, total: all.length, nextOffset };
+  const cursor = items.length ? (positions().get(items[items.length - 1].slug) ?? -1) + 1 : 0;
+  return { items, total: all.length, nextOffset, cursor };
 }
 
 export function trending(n = 6) {
